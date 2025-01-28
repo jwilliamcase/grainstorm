@@ -34,8 +34,16 @@
         <input type="range" id="densitySlider" min="0.0" max="1.0" step="0.01" value="1.0">
         <span id="densityValue">1.0</span>
         
-        <!-- Pitch Mode Selection -->
-        <label for="pitchMode" class="slider-label">Pitch Mode</label>
+                <!-- Window Type Selection -->
+                <label for="windowType" class="slider-label">Window Shape</label>
+                <select id="windowType">
+                    <option value="0">Cosine</option>
+                    <option value="1">Triangle</option>
+                    <option value="2">Hann</option>
+                </select>
+        
+                <!-- Pitch Mode Selection -->
+                <label for="pitchMode" class="slider-label">Pitch Mode</label>
         <select id="pitchMode">
             <option value="smooth">Smooth</option>
             <option value="12-tone">12-Tone Scale</option>

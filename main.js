@@ -19,12 +19,19 @@ async function initAudio() {
         const sampleData = audioBuffer.getChannelData(0);
         grainstormNode.port.postMessage({ command: 'loadSample', samples: sampleData });
     
-        // Enable controls
-        document.getElementById('togglePlayback').disabled = false;
-        document.getElementById('grainSizeSlider').disabled = false;
-        document.getElementById('pitchSlider').disabled = false;
-        document.getElementById('densitySlider').disabled = false;
-        document.getElementById('pitchMode').disabled = false;
+                // Enable controls
+                document.getElementById('togglePlayback').disabled = false;
+                document.getElementById('grainSizeSlider').disabled = false;
+                document.getElementById('pitchSlider').disabled = false;
+                document.getElementById('densitySlider').disabled = false;
+                document.getElementById('pitchMode').disabled = false;
+                document.getElementById('windowType').disabled = false;
+        
+                // Connect window type control
+                const windowTypeParam = grainstormNode.parameters.get('windowType');
+                document.getElementById('windowType').addEventListener('change', (e) => {
+                    windowTypeParam.value = parseInt(e.target.value);
+                });
     
         // Connect Density slider
         const densityParam = grainstormNode.parameters.get('density');

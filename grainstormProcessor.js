@@ -6,7 +6,8 @@ class GrainstormProcessor extends AudioWorkletProcessor {
                                           { name: 'grainSize', defaultValue: 0.1, minValue: 0.01, maxValue: 2.0 },
                                           { name: 'pitch', defaultValue: 1.0, minValue: 0.25, maxValue: 4.0 },
                                           { name: 'density', defaultValue: 20.0, minValue: 1.0, maxValue: 100.0 },
-                                          { name: 'spray', defaultValue: 0.0, minValue: 0.0, maxValue: 1.0 }
+                                          { name: 'spray', defaultValue: 0.0, minValue: 0.0, maxValue: 1.0 },
+                                          { name: 'windowType', defaultValue: 0, minValue: 0, maxValue: 2 }
                             ];
               }
 
@@ -54,7 +55,7 @@ class GrainstormProcessor extends AudioWorkletProcessor {
                                                         position: (this._writePos + sprayOffset + this._sampleData.length) % this._sampleData.length,
                                                         age: 0,
                                                         duration: grainSizeSec,
-                                                        window: this._createWindow(grainSizeSamples)
+                                                        window: this._createWindow(grainSizeSamples, parameters.windowType[0])
                                           });
                                           this._lastGrainTime += timeBetweenGrains;
                             }
@@ -93,11 +94,22 @@ class GrainstormProcessor extends AudioWorkletProcessor {
                             return true;
               }
               
-              // Create cosine window for grain envelope
-              _createWindow(length) {
+              // Create window envelope with multiple shapes
+              _createWindow(length, type) {
                             const window = new Float32Array(length);
+                            
                             for (let i = 0; i < length; i++) {
-                                          window[i] = Math.cos((i / length - 0.5) * Math.PI) * 0.5 + 0.5;
+                                          const phase = i / length;
+                                          switch(Math.round(type)) {
+                                                        case 1: // Triangle
+                                                                      window[i] = 1 - Math.abs(2 * phase - 1);
+                                                                      break;
+                                                        case 2: // Hann
+                                                                      window[i] = 0.5 * (1 - Math.cos(2 * Math.PI * phase));
+                                                                      break;
+                                                        default: // Original cosine (Hybrid)
+                                                                      window[i] = Math.cos((phase - 0.5) * Math.PI) * 0.5 + 0.5;
+                                          }
                             }
                             return window;
               }
