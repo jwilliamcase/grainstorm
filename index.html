@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body onload="initAudio()">
+<body>
     <div class="container">
         <h1>GRAINSTORM</h1>
         
@@ -20,9 +20,15 @@
 
         <!-- Grain Size Slider -->
         <label for="grainSizeSlider" class="slider-label">Grain Size</label>
-        <input type="range" id="grainSizeSlider" min="0.01" max="1.0" step="0.01" value="0.1">
+        <input type="range" id="grainSizeSlider" min="0.01" max="2.0" step="0.01" value="1.0">
+        <span id="grainSizeValue">2.0</span>
+        
+        <!-- Pitch Slider -->
+        <label for="pitchSlider" class="slider-label">Pitch</label>
+        <input type="range" id="pitchSlider" min="0.5" max="2.0" step="0.01" value="1.0">
+        <span id="pitchValue">1.0</span>
     </div>
 
-    <script src="main.js"></script>
+    <script src="main.js" type="module"></script>
 </body>
 </html>

@@ -9,9 +9,9 @@ class GrainstormProcessor extends AudioWorkletProcessor {
     return [
       {
         name: 'grainSize',
-        defaultValue: 0.1, // seconds
+        defaultValue: 2.0, // seconds
         minValue: 0.01,
-        maxValue: 1.0
+        maxValue: 2.0
       },
       {
         name: 'pitch',
