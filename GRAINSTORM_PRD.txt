@@ -1,0 +1,180 @@
+GRAINSTORM PRD
+1. Title & Author Information
+	•	Product Name: GRAINSTORM
+	•	Author: Joshua William Case
+
+2. Purpose & Scope
+Purpose GRAINSTORM is a browser-based, multi-band granular synthesizer that lets users experiment with extreme granular processing techniques on audio samples. Its purpose is to:
+	1	Provide an immediately playable, loop-based granular engine in a web environment.
+	2	Offer advanced controls for granular experimentation, including multi-band processing, user-defined envelopes, randomization, and more.
+	3	Serve as a foundation for potential expansion into native iOS or desktop applications in the future.
+Scope
+	•	Focus on Web Audio API (AudioWorklet) for cross-platform stability (desktop, iOS Safari, Android Chrome).
+	•	Provide a user-friendly interface with both basic and advanced modes.
+	•	Incorporate visual feedback (e.g. waveform display, circular knobs, minimalistic orange-on-black theme).
+	•	Integrate a musical typing keyboard for note input or direct grain triggering.
+	•	Support standard uncompressed audio files (WAV, AIFF) and potentially compressed formats (e.g. MP3) if feasible.
+
+3. Product Overview
+Vision GRAINSTORM aims to be a creative playground for audio enthusiasts, sound designers, and musicians wanting to explore granular sound manipulation. By combining an intuitive UI with powerful DSP, the app will allow deep sonic explorations while remaining accessible.
+Key Features
+	1	Granular Engine: Real-time granular processing with adjustable parameters (grain size, density, pitch, randomization, etc.).
+	2	Multi-Band: A three-band crossover filter approach that can be toggled on/off. Each band can have different granular parameters.
+	3	Musical Typing: Logic-style “ASDF” keyboard mapping, with Z/X to shift octaves, to send pitches or trigger grains.
+	4	Advanced Envelope Options: Choose between standard window types (Hann, Hamming, Triangle, Gaussian) or potentially custom ADSR.
+	5	Randomization & Sequencing: “Grainstorm” mode for random scanning, LFO-based scanning, or a 4-step sequence of position slices.
+	6	Bypass & A/B Compare: Users can compare processed and unprocessed signals or compare two parameter sets.
+	7	Saturating Limiter / Output Filter: Prevent clipping; optional drive or filter for creative distortion.
+	8	Preset & Settings Management: Users can save/load parameter settings (and possibly store the associated sample if feasible).
+
+4. Requirements
+4.1 Functional Requirements
+	1	File Import & Default Loop
+	◦	FR1.1: Allow drag-and-drop or file-browser import of .wav or .aiff files.
+	◦	FR1.2: Use a default sample that immediately loops so users hear something on first load.
+	◦	FR1.3: Store or reference user-loaded files in memory for immediate playback.
+	2	Always-On Granular Engine
+	◦	FR2.1: Granular processing is active by default.
+	◦	FR2.2: “Bypass” button toggles between processed and clean signal.
+	◦	FR2.3: “A/B” button can compare two sets of parameter states.
+	3	Multi-Band (3-Band Crossover) Toggle
+	◦	FR3.1: A button or switch that enables the 3-band split. Each band has its own granular engine instance.
+	◦	FR3.2: When disabled, revert to a single-band approach for simplicity.
+	4	Grain Parameter Controls
+	◦	FR4.1: Grain Size range from very small (1-2 ms) up to large “chunks” (up to 1 second or more).
+	◦	FR4.2: Density / Overlap expressed as fraction by default; clicking toggles to dB crossfade or overlap ratio.
+	◦	FR4.3: Window Type (Hann, Hamming, Triangle, Gaussian); user can pick from a dropdown.
+	◦	FR4.4: Optional “Custom Envelope” or ADSR mode to replace standard window.
+	◦	FR4.5: Position Scanning:
+	▪	Deterministic (linear)
+	▪	Random (“Grainstorm”)
+	▪	LFO-based scanning
+	▪	4-step sequencer with user-chosen position slices
+	◦	FR4.6: Pitch / Playback Rate: a slider or knob that can be quantized to a 12-tone scale or a specific mode if desired.
+	◦	FR4.7: Panning with random or LFO options.
+	◦	FR4.8: Reverse Probability: a slider for how often grains reverse.
+	◦	FR4.9: Master Gain with saturating limiter.
+	5	Musical Typing & Notes
+	◦	FR5.1: Map A, S, D, F, G, H, J, K, L for white keys and W, E, T, Y, U, O for black keys.
+	◦	FR5.2: Z / X shift the octave range down/up.
+	◦	FR5.3: User toggle to define if the typing triggers new grains or sets pitch for a continuous granular process.
+	◦	FR5.4: Provide note durations or hold until key-up if an ADSR is used.
+	6	Presets & Settings Management
+	◦	FR6.1: Ability to save current parameters as a named preset.
+	◦	FR6.2: Load previously saved presets; load a sample reference if feasible.
+	◦	FR6.3: Provide example presets demonstrating different extremes.
+
+4.2 Usability Requirements
+	1	UI Theme
+	◦	UR1.1: Minimalist orange on black look with circular 2D controls (knobs, pads).
+	◦	UR1.2: Clear, logical arrangement of controls.
+	2	Touch-Friendly / Responsive
+	◦	UR2.1: Controls sized for mobile interaction (finger targets ~44px min).
+	◦	UR2.2: Layout adapts to different screen sizes. Possibly encourage landscape orientation on phones.
+	3	Immediate Feedback
+	◦	UR3.1: Audio changes should be heard in real time as parameters move.
+	◦	UR3.2: If a parameter change might introduce CPU stress, provide a small “loading” or “warning” indicator.
+
+4.3 Technical Requirements
+	1	Platform & Compatibility
+	◦	TR1.1: Must run in modern browsers (Chrome, Firefox, Safari, Edge) with Web Audio API.
+	◦	TR1.2: Must support iOS (Safari) and Android (Chrome).
+	◦	TR1.3: Must handle user gesture to unlock audio on iOS (tap to start).
+	2	AudioWorklet
+	◦	TR2.1: Use AudioWorkletProcessor for low-latency, reliable real-time audio.
+	◦	TR2.2: The code can be in JavaScript or TypeScript; build pipeline for TS if chosen.
+	3	Performance
+	◦	TR3.1: Maintain stable audio with minimal dropouts; handle typical mobile device CPU constraints.
+	◦	TR3.2: Provide fallback or a parameter limit if CPU usage is too high (e.g., limiting polyphony/grains).
+	4	Sample Management
+	◦	TR4.1: Use decodeAudioData to handle .wav, .aiff (optional .mp3).
+	◦	TR4.2: Store decoded audio in an AudioBuffer.
+	5	Multi-Band
+	◦	TR5.1: Implement a crossover filter for splitting the signal into low, mid, and high bands.
+	◦	TR5.2: Each band runs its own granular process, merged in the final mix.
+	6	Saturating Limiter / Output Filter
+	◦	TR6.1: Include a final stage that prevents digital clipping.
+	◦	TR6.2: Provide a control to increase saturation/drive.
+
+4.4 Support Requirements
+	•	SR1: Provide basic user documentation (in-page tooltips or help overlay).
+	•	SR2: Offer trouble-shooting tips for iOS (unmute switch, user gesture).
+	•	SR3: Possibly maintain a small knowledge base or Q&A page.
+
+4.5 Interaction Requirements
+	1	Parameter Interaction
+	◦	Sliders, knobs, or XY pads that update the DSP in real time.
+	◦	Keyboard toggles, buttons, or dropdowns for advanced modes (multi-band, random scanning, etc.).
+	2	Keyboard Input
+	◦	Handle keydown events for musical typing.
+	◦	Visual indication of which note is being triggered.
+	3	Multi-Band Toggle
+	◦	A switch that dynamically adds or removes the multi-band signal path from the chain.
+	4	File Import / Preset Load
+	◦	Drag-and-drop area plus “Import File” button.
+	◦	Preset dropdown listing saved or default patches.
+
+5. Assumptions
+	1	Users have modern browsers with Web Audio API support (Chrome v70+, Firefox v66+, Safari iOS 14+, etc.).
+	2	AudioWorklet is available; older browsers with only ScriptProcessorNode are not a priority.
+	3	Users will allow microphone or file access if needed for advanced features (recording or local file load).
+
+6. Constraints
+	1	Browser Security: Some file operations (like storing local files) may require user permissions or downloads.
+	2	Mobile CPU Limitations: Large grain overlaps or multiple bands might stress older devices.
+	3	Audio Context Unlock: iOS Safari requires a user gesture to start audio.
+
+7. Dependencies
+	1	Web Audio API – the foundation for audio processing.
+	2	AudioWorklet – for real-time DSP.
+	3	(Optional) Build Tools – if TypeScript is used (e.g., Webpack, Rollup, or esbuild for bundling).
+	4	Libraries (potentially)
+	◦	For UI knobs: e.g., a library or custom code for SVG knobs/XY pads.
+	◦	For saving presets to local storage or for generating WAV output if exporting is desired.
+
+8. High-Level Workflow, Timeline & Milestones
+Below is a proposed project plan broken into manageable steps. Each step can be fed to a developer/LLM as a discrete task.
+	1	Phase 1: Project Setup & Basic Playback
+	◦	Milestone 1: Create grainstorm/ folder structure: index.html, style.css, main.js, grainstormProcessor.js (or .ts).
+	◦	Milestone 2: Initialize AudioContext & basic AudioWorklet module. Confirm audio output.
+	◦	Milestone 3: Load a default sample and loop it. Ensure it plays on desktop and iOS/Android with user tap.
+	2	Phase 2: Simple Granular Engine
+	◦	Milestone 4: Implement minimal granular code in the AudioWorklet (grain size, pitch, density).
+	◦	Milestone 5: Add a few sliders/controls in HTML to adjust these parameters in real time.
+	3	Phase 3: Multi-Band & Additional Parameters
+	◦	Milestone 6: Implement 3-band crossover with separate granular engines.
+	◦	Milestone 7: Add overlap modes, reverse, envelope window type, random scanning, etc.
+	◦	Milestone 8: Introduce musical typing (ASDF keys) with note pitch or grain trigger toggle.
+	4	Phase 4: UI & Design
+	◦	Milestone 9: Apply orange-on-black theme, minimalist layout. Incorporate circular or radial knobs (SVG, Canvas).
+	◦	Milestone 10: Implement advanced modes (random position, LFO scanning, step sequencer).
+	◦	Milestone 11: Add A/B compare, bypass, saturating limiter UI controls.
+	5	Phase 5: Presets & Final Polishing
+	◦	Milestone 12: Add preset system (save/load).
+	◦	Milestone 13: Tweak performance, optimize CPU usage on mobile.
+	◦	Milestone 14: Final bug fixes, improved help text, release MVP.
+	6	Phase 6: Evaluation & Next Steps
+	◦	Milestone 15: Evaluate performance on various devices, gather user feedback.
+	◦	Milestone 16: Potential expansion (native iOS port, FFT-based spectral approach, etc.).
+Timeframe (Example)
+	•	Each phase might take 1–2 weeks, depending on complexity and developer resources.
+	•	Overall 8–12 weeks to achieve a polished MVP.
+
+9. Evaluation Plan & Performance Metrics
+	1	Functional Testing
+	◦	EP1: Confirm file import (WAV, AIFF) works reliably.
+	◦	EP2: Verify each granular parameter (grain size, density, pitch, etc.) changes audio in real time.
+	2	Usability Testing
+	◦	EP3: Test on various screen sizes (desktop, tablet, phone). Check controls remain visible, easy to use.
+	◦	EP4: Evaluate the keyboard note input for correctness (pitch steps, octave shifts).
+	3	Performance Metrics
+	◦	PM1: CPU Load – Monitor how many concurrent grains each device can handle before dropouts. Aim for stable audio on mid-range mobile devices.
+	◦	PM2: Latency – Ensure parameter changes respond in < 20 ms.
+	◦	PM3: Memory Usage – Keep memory usage moderate; large buffers might be truncated or swapped out.
+	4	Stability Testing
+	◦	EP5: Run extended sessions (10+ minutes) to check for memory leaks or unexpected audio engine crashes.
+	5	User Feedback
+	◦	EP6: Gather feedback about interface clarity, aesthetic, and feature requests.
+
+Conclusion
+This PRD outlines the core vision and requirements for GRAINSTORM. It balances an immediate-play granular synth experience with the flexibility for advanced experimentation (multi-band, randomization, envelopes, etc.). Adhering to these specifications will ensure a robust, extensible foundation that can later be ported or expanded into native iOS or standalone desktop apps.
