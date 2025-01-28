@@ -9,9 +9,9 @@ class GrainstormProcessor extends AudioWorkletProcessor {
     return [
       {
         name: 'grainSize',
-        defaultValue: 2.0, // seconds
+        defaultValue: 1.0, // seconds
         minValue: 0.01,
-        maxValue: 2.0
+        maxValue: 10.0
       },
       {
         name: 'pitch',
@@ -84,7 +84,7 @@ class GrainstormProcessor extends AudioWorkletProcessor {
       // Advance position by pitch
       this._position += pitch;
 
-      // If we've reached the end of the "grain size" window, wrap
+      // If we've reached the end of the grain size window, wrap
       if (this._position >= grainLengthInSamples) {
         this._position = 0;
       }
