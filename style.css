@@ -49,7 +49,7 @@ body {
     margin-bottom: 0.5rem;
 }
 
-#grainSizeSlider, #pitchSlider {
+#grainSizeSlider, #pitchSlider, #densitySlider {
     width: 60%;
     margin-bottom: 2rem;
 }

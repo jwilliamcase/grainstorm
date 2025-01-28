@@ -1,97 +1,106 @@
 /** grainstorm/grainstormProcessor.js */
 
-/**
- * A minimal granular processor that loops through a loaded sample
- * at a variable pitch and grain size. Single-channel demonstration only.
- */
 class GrainstormProcessor extends AudioWorkletProcessor {
-  static get parameterDescriptors() {
-    return [
-      {
-        name: 'grainSize',
-        defaultValue: 1.0, // seconds
-        minValue: 0.01,
-        maxValue: 10.0
-      },
-      {
-        name: 'pitch',
-        defaultValue: 1.0,
-        minValue: 0.5,
-        maxValue: 2.0
-      }
-    ];
-  }
+              static get parameterDescriptors() {
+                            return [
+                                          { name: 'grainSize', defaultValue: 0.1, minValue: 0.01, maxValue: 2.0 },
+                                          { name: 'pitch', defaultValue: 1.0, minValue: 0.25, maxValue: 4.0 },
+                                          { name: 'density', defaultValue: 20.0, minValue: 1.0, maxValue: 100.0 },
+                                          { name: 'spray', defaultValue: 0.0, minValue: 0.0, maxValue: 1.0 }
+                            ];
+              }
 
-  constructor(options) {
-    super();
-    // Sample data (single-channel). If using multi-channel, store arrays of Float32Arrays.
-    this._sampleData = null;
-    // Current playback position (in samples)
-    this._position = 0;
-    // Cache the sampleRate from AudioWorkletGlobalScope
-    this._sampleRate = sampleRate;
+              constructor() {
+                            super();
+                            this._sampleData = null;
+                            this._writePos = 0; // Position through sample buffer
+                            this._sampleRate = sampleRate;
+                            this.phase = 0;
+                            this.grains = [];
+                            this._lastGrainTime = 0;
 
-    // Listen for messages from the main thread. One approach is to
-    // receive an array of float data to set up the sample. This is optional
-    // and may be replaced by a more advanced strategy.
-    this.port.onmessage = (event) => {
-      if (event.data.command === 'loadSample') {
-        // Expecting a Float32Array or similar
-        this._sampleData = event.data.samples;
-        this._position = 0;
-      }
-    };
-  }
+                            this.port.onmessage = (event) => {
+                                          if (event.data.command === 'loadSample') {
+                                                        this._sampleData = event.data.samples;
+                                                        this._position = 0;
+                                          }
+                            };
+              }
 
-  process(inputs, outputs, parameters) {
-    const output = outputs[0];
-    if (!output) return true;
+              process(inputs, outputs, parameters) {
+                            if (!this._sampleData) return true;
+                            const output = outputs[0][0];
+                            const now = currentTime;
+                            
+                            // Get current parameters
+                            const grainSizeSec = parameters.grainSize[0];
+                            const pitch = parameters.pitch[0];
+                            const density = parameters.density[0];
+                            const spray = parameters.spray[0];
+                            const grainSizeSamples = Math.floor(grainSizeSec * this._sampleRate);
 
-    // For simplicity, assume we just use the first output channel.
-    // You can adapt for multiple output channels by iterating over channels.
-    const outChannel = output[0];
+                            // Advance write position through sample buffer
+                            this._writePos += output.length;
+                            if (this._writePos > this._sampleData.length) {
+                                          this._writePos %= this._sampleData.length;
+                            }
 
-    // Extract parameter values (ignoring automation for brevity)
-    const grainSizeArray = parameters.grainSize;
-    const pitchArray = parameters.pitch;
-    const grainSize = grainSizeArray.length > 0 ? grainSizeArray[0] : 0.1;
-    const pitch = pitchArray.length > 0 ? pitchArray[0] : 1.0;
+                            // Schedule new grains based on density
+                            const timeBetweenGrains = 1 / density;
+                            while (now - this._lastGrainTime > timeBetweenGrains) {
+                                          const sprayOffset = Math.floor(spray * grainSizeSamples * (Math.random() - 0.5));
+                                          this.grains.push({
+                                                        startTime: this._lastGrainTime,
+                                                        position: (this._writePos + sprayOffset + this._sampleData.length) % this._sampleData.length,
+                                                        age: 0,
+                                                        duration: grainSizeSec,
+                                                        window: this._createWindow(grainSizeSamples)
+                                          });
+                                          this._lastGrainTime += timeBetweenGrains;
+                            }
 
-    // If no sample loaded, output silence
-    if (!this._sampleData) {
-      for (let i = 0; i < outChannel.length; i++) {
-        outChannel[i] = 0;
-      }
-      return true;
-    }
+                            // Process audio block
+                            for (let i = 0; i < output.length; i++) {
+                                          output[i] = 0;
+                                          const t = now + i / this._sampleRate;
 
-    // Calculate how many samples the current grain should be
-    const grainLengthInSamples = grainSize * this._sampleRate;
-    const sampleDataLength = this._sampleData.length;
+                                          // Accumulate active grains
+                                          for (let g = this.grains.length - 1; g >= 0; g--) {
+                                                        const grain = this.grains[g];
+                                                        const grainAge = t - grain.startTime;
+                                                        
+                                                        if (grainAge > grain.duration) {
+                                                                      this.grains.splice(g, 1);
+                                                                      continue;
+                                                        }
 
-    // Fill each sample in this block
-    for (let i = 0; i < outChannel.length; i++) {
-      // Read from sample data
-      const sampleIndex = Math.floor(this._position);
-      let sampleValue = 0;
+                                                        // Calculate window position
+                                                        const windowPos = Math.floor(grainAge * this._sampleRate);
+                                                        if (windowPos >= grain.window.length) continue;
 
-      if (sampleIndex >= 0 && sampleIndex < sampleDataLength) {
-        sampleValue = this._sampleData[sampleIndex];
-      }
+                                                        // Calculate sample position with pitch
+                                                        const samplePos = (grain.position + Math.floor(grainAge * pitch * this._sampleRate))
+                                                                                                                                                                                      % this._sampleData.length;
 
-      outChannel[i] = sampleValue;
+                                                        // Apply window and mix
+                                                        output[i] += this._sampleData[samplePos] * grain.window[windowPos];
+                                          }
+                                          
+                                          // Prevent clipping
+                                          output[i] = Math.tanh(output[i]);
+                            }
 
-      // Advance position by pitch
-      this._position += pitch;
-
-      // If we've reached the end of the grain size window, wrap
-      if (this._position >= grainLengthInSamples) {
-        this._position = 0;
-      }
-    }
-    return true; // Keep processor active
-  }
+                            return true;
+              }
+              
+              // Create cosine window for grain envelope
+              _createWindow(length) {
+                            const window = new Float32Array(length);
+                            for (let i = 0; i < length; i++) {
+                                          window[i] = Math.cos((i / length - 0.5) * Math.PI) * 0.5 + 0.5;
+                            }
+                            return window;
+              }
 }
 
-// Register the processor under a specific name that main.js uses
 registerProcessor('grainstorm-processor', GrainstormProcessor);

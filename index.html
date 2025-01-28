@@ -15,8 +15,9 @@
     <div class="container">
         <h1>GRAINSTORM</h1>
         
-        <!-- Toggle Playback Button -->
-        <button id="togglePlayback" onclick="togglePlayback()">Toggle Middle C</button>
+                    <!-- Toggle Playback Button -->
+                    <button id="togglePlayback" onclick="togglePlayback()">▶️ Play</button>
+        <!-- The button label will be updated dynamically by main.js -->
 
         <!-- Grain Size Slider -->
         <label for="grainSizeSlider" class="slider-label">Grain Size</label>
@@ -27,6 +28,11 @@
         <label for="pitchSlider" class="slider-label">Pitch</label>
         <input type="range" id="pitchSlider" min="0.5" max="2.0" step="0.01" value="1.0">
         <span id="pitchValue">1.0</span>
+        
+        <!-- Density Slider -->
+        <label for="densitySlider" class="slider-label">Density</label>
+        <input type="range" id="densitySlider" min="0.0" max="1.0" step="0.01" value="1.0">
+        <span id="densityValue">1.0</span>
         
         <!-- Pitch Mode Selection -->
         <label for="pitchMode" class="slider-label">Pitch Mode</label>
