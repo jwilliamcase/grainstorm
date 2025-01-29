@@ -1,130 +1,141 @@
-// Initialize audio context and nodes
-let audioContext, grainstormNode;
-let isPlaying = false;
+/** main.js */
 
+let audioContext = null;
+let grainstormNode = null;
+let audioBuffer = null;
+
+/**
+ * Draw waveform from a given AudioBuffer onto the #waveformCanvas
+ */
+function drawWaveform(ab) {
+  const canvas = document.getElementById('waveformCanvas');
+  if (!canvas) {
+    console.warn("[main.js] No waveformCanvas found in DOM.");
+    return;
+  }
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    console.warn("[main.js] Canvas context not available.");
+    return;
+  }
+  const width = canvas.width;
+  const height = canvas.height;
+  // Clear
+  ctx.clearRect(0, 0, width, height);
+
+  if (!ab) {
+    console.warn("[main.js] No audioBuffer for waveform drawing.");
+    return;
+  }
+
+  // We'll use channel 0 for the wave
+  const data = ab.getChannelData(0);
+  if (!data || data.length === 0) {
+    console.warn("[main.js] AudioBuffer channel0 is empty or missing.");
+    return;
+  }
+
+  // Step is how many samples we skip each pixel
+  const step = Math.ceil(data.length / width);
+
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+
+  let x = 0;
+  for (let i = 0; i < data.length; i += step) {
+    const val = data[i] * 0.5; // amplitude scale
+    const y = height / 2 - val * (height / 2);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+    x++;
+  }
+  ctx.stroke();
+}
+
+// MAIN init
 async function initAudio() {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    
-    try {
-        // Load sample
-        const response = await fetch('assets/default.wav');
-        const arrayBuffer = await response.arrayBuffer();
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    
-        // Load processor
-        await audioContext.audioWorklet.addModule('grainstormProcessor.js');
-        grainstormNode = new AudioWorkletNode(audioContext, 'grainstorm-processor');
-    
-        // Send sample data
-        const sampleData = audioBuffer.getChannelData(0);
-        grainstormNode.port.postMessage({ command: 'loadSample', samples: sampleData });
-    
-                // Enable controls
-                document.getElementById('togglePlayback').disabled = false;
-                document.getElementById('grainSizeSlider').disabled = false;
-                document.getElementById('pitchSlider').disabled = false;
-                document.getElementById('densitySlider').disabled = false;
-                document.getElementById('pitchMode').disabled = false;
-                document.getElementById('windowType').disabled = false;
-        
-                // Connect window type control
-                const windowTypeParam = grainstormNode.parameters.get('windowType');
-                document.getElementById('windowType').addEventListener('change', (e) => {
-                    windowTypeParam.value = parseInt(e.target.value);
-                });
-    
-        // Connect Density slider
-        const densityParam = grainstormNode.parameters.get('density');
-        const densitySlider = document.getElementById('densitySlider');
-        const densityValueSpan = document.getElementById('densityValue');
-    
-        densitySlider.addEventListener('input', (e) => {
-            const rawValue = parseFloat(e.target.value);
-            // Scale from 0-1 to 1-100
-            const scaledValue = 1 + (rawValue * 99);
-            densityParam.value = scaledValue;
-            densityValueSpan.innerText = rawValue.toFixed(2);
-        });
-    
-        // Pitch slider setup
-        const pitchParam = grainstormNode.parameters.get('pitch');
-        const pitchSlider = document.getElementById('pitchSlider');
-        const pitchValueSpan = document.getElementById('pitchValue');
-        const pitchModeSelect = document.getElementById('pitchMode');
-        const pitchModeValueSpan = document.getElementById('pitchModeValue');
-        
-        // Define pitch steps for different modes
-        const pitchModes = {
-            '12-tone': [0.5, 0.53, 0.56, 0.59, 0.63, 0.67, 0.71, 0.75, 0.8, 0.84, 0.89, 0.94, 1.0, 1.06, 1.12, 1.19, 1.26, 1.34, 1.42, 1.5, 1.59, 1.69, 1.79, 1.89, 2.0],
-            'major': [0.5, 0.56, 0.63, 0.71, 0.8, 0.89, 1.0, 1.12, 1.26, 1.42, 1.59, 1.79, 2.0],
-            'minor': [0.5, 0.56, 0.63, 0.71, 0.79, 0.89, 1.0, 1.12, 1.26, 1.42, 1.59, 1.78, 2.0]
-        };
-        
-        let currentPitchMode = 'smooth';
-        
-        // Helper function to find the closest step
-        function findClosestStep(value, steps) {
-            let closest = steps[0];
-            let minDiff = Math.abs(value - closest);
-            for (let i = 1; i < steps.length; i++) {
-                const diff = Math.abs(value - steps[i]);
-                if (diff < minDiff) {
-                    closest = steps[i];
-                    minDiff = diff;
-                }
-            }
-            return closest;
-        }
-        
-        // Helper function to capitalize first letter
-        function capitalizeFirstLetter(string) {
-            return string.charAt(0).toUpperCase() + string.slice(1);
-        }
-        
-        // Event listener for Pitch Mode selection
-        pitchModeSelect.addEventListener('change', (e) => {
-            currentPitchMode = e.target.value;
-            pitchModeValueSpan.innerText = capitalizeFirstLetter(currentPitchMode.replace('-', ' '));
-            // Reset pitch slider to default value
-            pitchSlider.value = 1.0;
-            pitchParam.value = 1.0;
-            pitchValueSpan.innerText = pitchParam.value.toFixed(2);
-        });
-        
-        // Event listener for Pitch slider
-        pitchSlider.addEventListener('input', (e) => {
-            let value = parseFloat(e.target.value);
-            if (currentPitchMode !== 'smooth') {
-                const steps = pitchModes[currentPitchMode];
-                value = findClosestStep(value, steps);
-                pitchSlider.value = value;
-            }
-            pitchParam.value = value;
-            pitchValueSpan.innerText = value.toFixed(2);
-        });
-    } catch (error) {
-        console.error('Audio initialization failed:', error);
-    }
+  console.log("[main.js] Initializing audio...");
+
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+  try {
+    // Fetch sample
+    const resp = await fetch('assets/default.wav');
+    const arrBuf = await resp.arrayBuffer();
+    audioBuffer = await audioContext.decodeAudioData(arrBuf);
+
+    // Load Worklet
+    await audioContext.audioWorklet.addModule('grainstormProcessor.js');
+    grainstormNode = new AudioWorkletNode(audioContext, 'grainstorm-processor');
+
+    // Sample data
+    const sampleData = [
+      audioBuffer.getChannelData(0),
+      audioBuffer.numberOfChannels > 1
+        ? audioBuffer.getChannelData(1)
+        : audioBuffer.getChannelData(0)
+    ];
+    console.log("[main.js] Sample loaded. Ch0[0..9]:", sampleData[0].slice(0,10));
+
+    // Send sample
+    grainstormNode.port.postMessage({
+      command: 'loadSample',
+      samples: sampleData
+    });
+
+    // Create Delay, feedback
+    const delayNode = audioContext.createDelay(1.0);
+    delayNode.delayTime.value = 0.4;
+
+    const feedbackGain = audioContext.createGain();
+    feedbackGain.gain.value = 0.3;
+
+    // Connect
+    grainstormNode.connect(delayNode);
+    delayNode.connect(feedbackGain);
+    feedbackGain.connect(audioContext.destination);
+
+    // Setup controls
+    setupSliders(delayNode, feedbackGain);
+
+    // Attempt to draw wave
+    drawWaveform(audioBuffer);
+
+    console.log("[main.js] Audio initialized successfully.");
+  } catch (err) {
+    console.error("[main.js] Audio initialization failed:", err);
+  }
 }
 
-// Define the `togglePlayback` function
-function togglePlayback() {
-    if (!grainstormNode) {
-        return;
-    }
+function setupSliders(delayNode, feedbackGain) {
+  // Delay
+  const delayTimeSlider = document.getElementById('delayTimeSlider');
+  const delayTimeValueSpan = document.getElementById('delayTimeValue');
+  if (delayTimeSlider && delayTimeValueSpan) {
+    delayTimeSlider.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      delayNode.delayTime.value = val;
+      delayTimeValueSpan.innerText = val.toFixed(2);
+    });
+  }
 
-    if (isPlaying) {
-        grainstormNode.disconnect(audioContext.destination);
-        isPlaying = false;
-        document.getElementById('togglePlayback').innerText = '▶️ Play';
-    } else {
-        grainstormNode.connect(audioContext.destination);
-        isPlaying = true;
-        document.getElementById('togglePlayback').innerText = '⏸️ Pause';
-    }
+  // Feedback
+  const feedbackSlider = document.getElementById('feedbackSlider');
+  const feedbackValueSpan = document.getElementById('feedbackValue');
+  if (feedbackSlider && feedbackValueSpan) {
+    feedbackSlider.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      feedbackGain.gain.value = val;
+      feedbackValueSpan.innerText = val.toFixed(2);
+    });
+  }
+
+  // Setup other param sliders here ...
+  // ...
 }
 
-window.togglePlayback = togglePlayback;
-
-// Initialize when module loads
-initAudio();
+// Start on load
+window.addEventListener('load', () => {
+  initAudio();
+});
