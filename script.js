@@ -1,6 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
     const waveformCanvas = document.getElementById('waveform-canvas');
     const canvasCtx = waveformCanvas.getContext('2d');
+
+    let audioContext; // Declare audioContext, but initialize later on user interaction
+    // initializeAudioNodes(); // Initialize audio nodes will be done on first click
+
+
+
     const grainSizeControl = document.getElementById('grain-size');
     const grainRateControl = document.getElementById('grain-rate');
     const pitchControl = document.getElementById('pitch');
@@ -27,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const delayFeedbackValueDisplay = document.getElementById('delay-feedback-value');
 
 
-    let audioContext;
+    
     let audioBuffer;
     let isGrainStreamActive = false;
     let grainIntervalId;
@@ -229,7 +235,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!audioBuffer) return;
 
         if (!audioContext) {
-            initializeAudioNodes();
+            audioContext = new (window.AudioContext || window.webkitAudioContext)(); // Initialize AudioContext on first click
+            initializeAudioNodes(); // Initialize audio nodes now that context exists
         }
 
         const canvasRect = waveformCanvas.getBoundingClientRect();
@@ -456,6 +463,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const arrayBuffer = await response.arrayBuffer();
+            if (!audioContext) { // Initialize audio context if it's not already there (in case default load happens before click)
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                initializeAudioNodes();
+            }
             audioContext.decodeAudioData(arrayBuffer).then(decodedBuffer => {
                 audioBuffer = decodedBuffer;
                 drawWaveform(audioBuffer);
