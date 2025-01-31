@@ -8,7 +8,9 @@
 </head>
 <body>
     <div class="container">
-        <h1>GRAINSTORM</h1>
+        <div class="header">
+            <h1>GRAINSTORM</h1>
+        </div>
         <canvas id="waveform-canvas" class="waveform-canvas drop-area">
             <p>Drag and drop audio sample here</p>
         </canvas>
@@ -74,6 +76,8 @@
                 </div>
                  <div class="control-group">
                      <button id="stop-button" class="stop-button">Stop</button>
+                     <button id="randomize-all" class="randomize-button">🎲</button>
+                     
                 </div>
             </div>
         </div>
@@ -88,6 +92,7 @@
                 </div>
                 <button id="run-button" class="run-button">Run</button>
                 <button id="seq-stop-button" class="stop-button">Stop Seq</button>
+                <button id="randomize-sequencer" class="randomize-button seq-randomize-button">🎲</button>
             </div>
             <div class="steps">
                 <button class="step" data-step="1">1</button>

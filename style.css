@@ -71,6 +71,12 @@ h1 {
 .waveform-canvas.has-sample {
     border: 2px solid #ffa500; /* Orange border when sample is loaded */
 }
+.waveform-canvas.has-sample {
+    border: 2px solid #ffa500; /* Keep orange border highlight */
+}
+.waveform-canvas.has-sample {
+    /* Add style specifically for waveform color */
+}
 
 
 .controls {
@@ -234,4 +240,37 @@ h1 {
     box-sizing: border-box;
     font-size: 0.9em;
     text-align: center;
+}
+
+.header {
+    display: flex;
+    justify-content: center; /* Center content horizontally */
+    align-items: center; /* Vertically align items */
+    gap: 20px; /* Spacing between title and button */
+    margin-bottom: 20px; /* Add some margin below the header */
+}
+
+.randomize-button {
+    background-color: #444; /* Dark grey button */
+    color: #f0f0f0;
+    border: none;
+    padding: 10px;
+    border-radius: 50%; /* Make it round */
+    cursor: pointer;
+    font-size: 1.2em; /* Slightly larger dice icon */
+    transition: background-color 0.3s ease;
+    width: 40px; /* Fixed width and height for round button */
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.randomize-button:hover {
+    background-color: #555; /* Slightly lighter grey on hover */
+}
+
+.seq-randomize-button {
+    margin-left: 10px; /* Add some space to the left of sequencer randomize button */
 }

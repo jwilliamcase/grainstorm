@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         const channelData = buffer.getChannelData(0);
-        const waveformColor = '#ffa500';
+        const waveformColor = '#FFFFFF'; // Use white for waveform
 
 
         canvasCtx.strokeStyle = waveformColor;
@@ -394,11 +394,64 @@ document.addEventListener('DOMContentLoaded', () => {
     seqStopButton.addEventListener('click', stopSequencer);
     stepElements.forEach((step, index) => {
         step.addEventListener('click', () => {
-            currentStep = index; // Update current step index
-            updateStepHighlight(); // Highlight active step
-            applySequencerStep(currentStep); // Apply parameters for the clicked step
+            currentStep = index;
+            updateStepHighlight();
+            applySequencerStep(currentStep);
         });
     });
+
+    // --- Randomize Buttons ---
+    const randomizeAllButton = document.getElementById('randomize-all');
+    const randomizeSeqButton = document.getElementById('randomize-sequencer');
+
+    randomizeAllButton.addEventListener('click', randomizeAllParameters);
+    randomizeSeqButton.addEventListener('click', randomizeSequencerParametersForAllSteps); // Changed to randomize all steps
+
+
+    function randomizeAllParameters() {
+        grainSizeControl.value = Math.random() * (200 - 10) + 10;
+        grainRateControl.value = Math.random() * (100 - 10) + 10;
+        pitchControl.value = Math.floor(Math.random() * (12 - (-12) + 1)) - 12;
+        randomPositionControl.value = Math.random();
+        sprayControl.value = Math.random();
+        delayTimeControl.value = Math.random() * 0.5 + 0.01;
+        delayFeedbackControl.value = Math.random() * 0.9;
+        windowFunctionControl.value = ['hann', 'hamming', 'rectangular'][Math.floor(Math.random() * 3)];
+        playbackModeControl.value = ['forward', 'reverse', 'random'][Math.floor(Math.random() * 3)];
+
+        // Update UI displays
+        grainSizeValueDisplay.textContent = grainSizeControl.value + "ms";
+        grainRateValueDisplay.textContent = grainRateControl.value + " grains/sec";
+        pitchValueDisplay.textContent = pitchControl.value + " st";
+        randomPositionValueDisplay.textContent = parseFloat(randomPositionControl.value).toFixed(2);
+        sprayValueDisplay.textContent = parseFloat(sprayControl.value).toFixed(2);
+        delayTimeValueDisplay.textContent = parseFloat(delayTimeControl.value).toFixed(2) + "s";
+        delayFeedbackValueDisplay.textContent = parseFloat(delayFeedbackControl.value).toFixed(2);
+
+        if (!sequencerActive) {
+            sequencerStates[currentStep].grainSize = parseInt(grainSizeControl.value);
+            sequencerStates[currentStep].pitch = parseInt(pitchControl.value);
+            sequencerStates[currentStep].randomPosition = parseFloat(randomPositionControl.value);
+            sequencerStates[currentStep].spray = parseFloat(sprayControl.value);
+        }
+    }
+
+
+    function randomizeSequencerStepParameters(stepIndex) { // Now takes stepIndex as argument
+        sequencerStates[stepIndex] = { // Apply to specific step
+            pitch: Math.floor(Math.random() * (12 - (-12) + 1)) - 12,
+            grainSize: Math.random() * (200 - 10) + 10,
+            randomPosition: Math.random(),
+            spray: Math.random()
+        };
+    }
+
+    function randomizeSequencerParametersForAllSteps() {
+        for (let i = 0; i < numSteps; i++) {
+            randomizeSequencerStepParameters(i); // Randomize each step
+        }
+         applySequencerStep(currentStep); // Update UI to reflect current step parameters after randomizing all
+    }
 
 
     function startSequencer() {
@@ -407,7 +460,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sequencerActive = true;
         currentStep = 0;
         updateStepHighlight();
-        applySequencerStep(currentStep); // Apply initial step parameters
+        applySequencerStep(currentStep);
         sequencerIntervalId = setInterval(advanceSequencer, 60000 / tempoControl.value);
     }
 
