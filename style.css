@@ -1,55 +1,237 @@
-/* Reset or minimal styling */
-* {
+body {
+    background-color: #333; /* Grey background */
+    color: #f0f0f0;
+    font-family: sans-serif;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    background-color: #000; /* Black background */
-    color: #fff;           /* White text by default */
-    font-family: 'Rajdhani', sans-serif;
-    height: 100vh;
     display: flex;
-    flex-direction: column;
-}
-
-/* Center container */
-.container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     justify-content: center;
-    flex: 1;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    background-color: #000; /* Black container background (Roland-like) */
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    display: flex; /* Use flexbox for layout */
+    flex-direction: column; /* Stack elements vertically */
+    align-items: center; /* Center items horizontally */
+}
+
+h1 {
+    margin-bottom: 20px;
+    color: #ffa500; /* Orange title (Roland-like) */
+    font-size: 2em; /* Slightly larger title */
+    letter-spacing: 0.1em; /* Add letter spacing for retro feel */
+}
+
+.drop-area {
+    border: 2px dashed #666;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    color: #888;
+    height: 150px; /* Fixed height for canvas/drop area */
+    margin-bottom: 20px; /* Add margin below the canvas/drop-area */
+    padding: 0; /* Remove padding that might cause spacing issues */
+    box-sizing: border-box; /* Ensure padding and border are inside the element's dimensions */
+    width: 100%; /* Ensure it takes the full width of the container */
+}
+
+.drop-area p {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.drop-area.drag-over {
+    border-color: #aaa;
+    background-color: #111;
+}
+
+.waveform-canvas {
+    background-color: #111; /* Keep dark waveform background */
+    border-radius: inherit; /* Inherit border-radius from drop-area */
+    cursor: crosshair;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    display: block; /* Ensure canvas is a block element */
+}
+
+.waveform-canvas.has-sample {
+    border: 2px solid #ffa500; /* Orange border when sample is loaded */
+}
+
+
+.controls {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #1e1e1e; /* Slightly darker controls background */
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column; /* Stack control rows */
+    gap: 10px; /* Spacing between control rows */
+    width: 100%; /* Controls take full width */
+    box-sizing: border-box; /* Ensure padding is inside the width */
+}
+
+.control-row {
+    display: flex;
+    justify-content: space-around;
+    gap: 10px;
+    width: 100%;
+    align-items: center; /* Vertically align items in control row */
+}
+
+
+.control-group {
+    display: flex;
+    flex-direction: column; /* Stack label and input vertically */
+    align-items: center; /* Center items horizontally in control group */
+    gap: 5px; /* Spacing between label and input */
+    width: auto; /* Adjust width to content */
+}
+
+.control-group label {
+    color: #ffa500; /* Orange labels (Roland-like) */
+    text-align: center; /* Center labels */
+    font-size: 0.9em; /* Slightly smaller labels */
+}
+
+.control-group input[type="range"],
+.control-group select {
+    background-color: #333; /* Dark input background */
+    color: #f0f0f0;
+    border: 1px solid #666;
+    border-radius: 4px;
+    padding: 8px;
+    width: 100%; /* Make inputs take full width of control group */
+    box-sizing: border-box;
+    font-size: 0.9em;
+}
+
+.control-group input[type="range"] {
+    height: 5px; /* Make range input thinner */
+    -webkit-appearance: none; /* Remove default appearance */
+    appearance: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.control-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background-color: #ffa500; /* Orange slider thumb */
+    cursor: pointer;
+    border-radius: 50%;
+}
+
+.control-group input[type="range"]::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background-color: #ffa500; /* Orange slider thumb */
+    cursor: pointer;
+    border-radius: 50%;
+    border: none; /* Remove border for Firefox */
+}
+
+
+.control-group span {
+    color: #f0f0f0;
+    font-size: 0.8em; /* Slightly smaller value display */
+    margin-top: 2px; /* Small top margin for value */
+}
+
+.stop-button {
+    background-color: #d32f2f; /* Red background for stop button */
+    color: #f0f0f0;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px; /* Reduce margin top */
+    transition: background-color 0.3s ease;
+    font-size: 0.9em; /* Slightly smaller stop button text */
+}
+
+.stop-button:hover {
+    background-color: #b71c1c; /* Darker red on hover */
+}
+
+.sequencer {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    width: 100%;
+    box-sizing: border-box;
     text-align: center;
 }
 
-/* Big bold heading */
-.container h1 {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-    color: #ff7700; /* Bright orange text for the heading */
+.sequencer h2 {
+    color: #ffa500;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.5em;
 }
 
-/* Toggle Playback Button */
-#togglePlayback {
-    background-color: #ff7700; /* Bright orange */
-    color: #000;              /* Black text */
-    font-size: 1.2rem;
-    padding: 0.75em 1.5em;
-    border: none;
+.sequencer .control-row {
+    justify-content: center; /* Center buttons and tempo control */
+    margin-bottom: 15px;
+}
+
+.sequencer .control-group {
+    margin-right: 20px; /* Spacing from tempo control to buttons */
+}
+
+.sequencer .run-button,
+.sequencer .stop-button {
+    padding: 10px 15px;
+    font-size: 0.9em;
+    margin: 0 5px;
+}
+
+.sequencer .steps {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr); /* 8 equal columns */
+    gap: 10px;
+    text-align: center;
+}
+
+.sequencer .step {
+    background-color: #333;
+    color: #f0f0f0;
+    border-radius: 5px;
+    padding: 10px;
     cursor: pointer;
-    margin: 1rem;
+    transition: background-color 0.2s ease;
+}
+
+.sequencer .step.active {
+    background-color: #ffa500; /* Highlight active step */
+    color: #000;
+}
+
+.sequencer input[type="number"] {
+    background-color: #333;
+    color: #f0f0f0;
+    border: 1px solid #666;
     border-radius: 4px;
-}
-
-/* Style for the slider and label */
-.slider-label {
-    display: block;
-    margin-bottom: 0.5rem;
-}
-
-#grainSizeSlider, #pitchSlider, #densitySlider, #spraySlider, #delayTimeSlider, #feedbackSlider {
-    width: 60%;
-    margin-bottom: 2rem;
+    padding: 8px;
+    width: 80px; /* Fixed width for tempo input */
+    box-sizing: border-box;
+    font-size: 0.9em;
+    text-align: center;
 }
