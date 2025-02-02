@@ -69,7 +69,11 @@ h1 {
 }
 
 .waveform-canvas.has-sample {
-    border: 2px solid #ffa500; /* Orange border when sample is loaded */
+    border: 2px solid #ffa500; /* Keep orange border highlight */
+}
+
+.waveform-canvas.grain-play {
+    border: 2px solid #00FF00; /* Green border when a grain is played */
 }
 .waveform-canvas.has-sample {
     border: 2px solid #ffa500; /* Keep orange border highlight */

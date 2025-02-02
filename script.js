@@ -17,6 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const stopButton = document.getElementById('stop-button');
     const delayTimeControl = document.getElementById('delay-time');
     const delayFeedbackControl = document.getElementById('delay-feedback');
+    const filterCutoffControl = document.getElementById('filter-cutoff');
+    const filterCutoffValueDisplay = document.getElementById('filter-cutoff-value');
+    const filterResonanceControl = document.getElementById('filter-resonance');
+    const filterResonanceValueDisplay = document.getElementById('filter-resonance-value');
     const tempoControl = document.getElementById('tempo');
     const tempoValueDisplay = document.getElementById('tempo-value');
     const runButton = document.getElementById('run-button');
@@ -35,6 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     
     let audioBuffer;
+    let globalFilterNode;
+    let activeFilterNodes = [];
     let isGrainStreamActive = false;
     let grainIntervalId;
     let delayNodeLeft;
@@ -75,7 +81,12 @@ document.addEventListener('DOMContentLoaded', () => {
         feedbackGainNodeRight.gain.value = parseFloat(delayFeedbackControl.value);
 
         stereoPannerNode = audioContext.createStereoPanner();
-
+        
+        // Create a global filter node for the wet signal path
+        globalFilterNode = audioContext.createBiquadFilter();
+        globalFilterNode.type = 'bandpass';
+        globalFilterNode.frequency.value = parseFloat(filterCutoffControl.value);
+        globalFilterNode.Q.value = parseFloat(filterResonanceControl.value);
 
         // Connect Delay Nodes in Ping-Pong Configuration
         delayNodeLeft.connect(feedbackGainNodeLeft);
@@ -111,10 +122,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!sequencerActive) sequencerStates[currentStep].spray = parseFloat(sprayControl.value);
     });
     delayTimeControl.addEventListener('input', () => {
-        delayTimeValueDisplay.textContent = parseFloat(delayTimeControl.value).toFixed(2) + "s";
-        if (delayNodeLeft && delayNodeRight) {
-            delayNodeLeft.delayTime.value = parseFloat(delayTimeControl.value);
-            delayNodeRight.delayTime.value = parseFloat(delayTimeControl.value);
+        const newDelay = parseFloat(delayTimeControl.value);
+        delayTimeValueDisplay.textContent = newDelay.toFixed(2) + "s";
+        if (delayNodeLeft && delayNodeRight && audioContext) {
+            delayNodeLeft.delayTime.setTargetAtTime(newDelay, audioContext.currentTime, 0.1);
+            delayNodeRight.delayTime.setTargetAtTime(newDelay, audioContext.currentTime, 0.1);
         }
     });
     delayFeedbackControl.addEventListener('input', () => {
@@ -124,6 +136,22 @@ document.addEventListener('DOMContentLoaded', () => {
             feedbackGainNodeRight.gain.value = parseFloat(delayFeedbackControl.value);
         }
     });
+    filterCutoffControl.addEventListener('input', () => {
+        filterCutoffValueDisplay.textContent = filterCutoffControl.value + " Hz";
+        const newVal = parseFloat(filterCutoffControl.value);
+        if (globalFilterNode && audioContext) {
+            globalFilterNode.frequency.setTargetAtTime(newVal, audioContext.currentTime, 0.1);
+        }
+    });
+    filterResonanceControl.addEventListener('input', () => {
+        filterResonanceValueDisplay.textContent = parseFloat(filterResonanceControl.value).toFixed(2);
+        const newVal = parseFloat(filterResonanceControl.value);
+        if (globalFilterNode && audioContext) {
+            globalFilterNode.Q.setTargetAtTime(newVal, audioContext.currentTime, 0.1);
+        }
+    });
+
+    
     tempoControl.addEventListener('input', () => {
         tempoValueDisplay.textContent = tempoControl.value + " BPM";
         if (sequencerActive) {
@@ -167,7 +195,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 audioBuffer = await audioContext.decodeAudioData(event.target.result);
                 drawWaveform(audioBuffer);
                 waveformCanvas.classList.add('has-sample');
-                canvasCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
                 isGrainStreamActive = false;
                 stopGrainStream();
                 stopSequencer();
@@ -181,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- Draw Waveform Function ---
-    function drawWaveform(buffer) {
+    function drawWaveform(buffer, markerX) {
         const canvasWidth = waveformCanvas.width = waveformCanvas.offsetWidth;
         const canvasHeight = waveformCanvas.height = 150;
         canvasCtx.clearRect(0, 0, canvasWidth, canvasHeight); // Clear canvas FIRST
@@ -227,6 +254,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         canvasCtx.stroke();
+    
+        // Draw marker if provided
+        if (typeof markerX !== 'undefined') {
+            canvasCtx.strokeStyle = '#FF0000'; // Red marker line
+            canvasCtx.lineWidth = 2;
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(markerX, 0);
+            canvasCtx.lineTo(markerX, canvasHeight);
+            canvasCtx.stroke();
+        }
     }
 
 
@@ -242,7 +279,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const canvasRect = waveformCanvas.getBoundingClientRect();
         const clickX = e.clientX - canvasRect.left;
         currentGrainPositionRatio = clickX / waveformCanvas.width;
-
+        // Redraw waveform with a marker at the click position
+        drawWaveform(audioBuffer, clickX);
+    
         if (!isGrainStreamActive && !sequencerActive) {
             isGrainStreamActive = true;
             startGrainStream();
@@ -306,8 +345,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         if (startSample < 0) startSample = 0;
-        if (startSample + bufferLength > audioBuffer.lengthInSamples) {
-            bufferLength = audioBuffer.lengthInSamples - startSample;
+        if (startSample + bufferLength > audioBuffer.length) {
+            bufferLength = audioBuffer.length - startSample;
         }
         if (bufferLength < 0 ) bufferLength = 0;
 
@@ -328,28 +367,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const source = audioContext.createBufferSource();
         source.buffer = sourceBuffer;
-
-
         // --- Grain Envelope (Smoother Hann Window) ---
         const gainNode = audioContext.createGain();
         applyWindowFunction(gainNode, grainDuration, windowType);
         source.connect(gainNode);
-
-
+        
+        // Create dry path for immediate signal routing
+        const dryGain = audioContext.createGain();
+        dryGain.gain.value = 1.0; // Full level dry signal
+        gainNode.connect(dryGain);
+        dryGain.connect(stereoPannerNode);
+        
+        // Route wet path through the global filter and then into the delay chain
+        gainNode.connect(globalFilterNode);
+        globalFilterNode.connect(delayNodeLeft);
+        
         // --- Stereo Panning ---
         stereoPannerNode.pan.value = (Math.random() * 2) - 1;
-
-
-        // --- Pitch Shifting ---
         if (pitchShift !== 0) {
             source.playbackRate.value = Math.pow(2, pitchShift / 12);
         }
 
 
-        gainNode.connect(delayNodeLeft); // Connect to delay input
 
 
+
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
         source.start(audioContext.currentTime);
+        waveformCanvas.classList.add('grain-play');
+        setTimeout(() => {
+            waveformCanvas.classList.remove('grain-play');
+        }, 100);
         source.stop(audioContext.currentTime + grainDuration);
     }
 
@@ -372,18 +422,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 windowValue = 0.54 - 0.46 * Math.cos(2 * Math.PI * i / (bufferSize - 1));
             }
 
-            windowValues[i] = windowValue;
+            windowValues[i] = windowValue * 0.8;
         }
 
 
-        const attackTime = duration /  2; // 50% attack - Even smoother fade
-        const releaseTime = duration / 2; // 50% release - Even smoother fade
-        const maxGain = 0.8; // Reduce max gain to compensate for longer envelope
-
-
-        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(maxGain, audioContext.currentTime + attackTime);
-        gainNode.gain.setValueAtTime(maxGain, audioContext.currentTime + duration - releaseTime);
+        if (windowType === 'rectangular') {
+            gainNode.gain.setValueAtTime(1, audioContext.currentTime);
+        } else {
+            gainNode.gain.setValueCurveAtTime(windowValues, audioContext.currentTime, duration);
+        }
         gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + duration); // Release
     }
 
@@ -524,7 +571,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 audioBuffer = decodedBuffer;
                 drawWaveform(audioBuffer);
                 waveformCanvas.classList.add('has-sample');
-                canvasCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
                 console.log('Default sample loaded successfully');
             }).catch(decodeError => {
                 console.error('Error decoding default audio data:', decodeError);
@@ -539,4 +585,9 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDefaultSample(); // Attempt to load default sample on startup
     applySequencerStep(0); // Initialize UI with first step parameters
 
+    window.addEventListener('resize', () => {
+        if (audioBuffer) {
+            drawWaveform(audioBuffer);
+        }
+    });
 });
